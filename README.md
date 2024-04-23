@@ -24,10 +24,12 @@ Hibernate has built-in support for optimistic locking.
 
 1. Add a `version` column to your table.
 2. Annotate the `Entity` column with `@Version`.
-3. Catch `StaleStateExcetion` when conflicts occur.
+3. Catch `OptimisticLockingFailureException` when conflicts occur.
 4. Re-fetch the row to get the latest state and try the update again.
 
 ### Database
+Hibernate logging is turned on. Review the logs to see how the version column is being automatically added to update queries.
+
 H2 is used and can be viewed at `localhost:8080/h2-console`.
 
 The table `MY_TABLE` starts with the following row in `data.sql`:
@@ -36,7 +38,7 @@ The table `MY_TABLE` starts with the following row in `data.sql`:
 |----|---------|--------------|----------|
 | 1  | 0       | Keyboard     | 50       |
 
-### Force a `StaleStateException` in the app
+### Force an `OptimisticLockingFailureException` in the app
 This exception is thrown when the optimistic lock detects a conflict.
 
 1. Run the app in debug mode.
@@ -46,6 +48,7 @@ This exception is thrown when the optimistic lock detects a conflict.
    2. Open another browser tab and hit the same endpoint: `http://localhost:8080`
 4. Resume both breakpoints.
 5. The second will trigger the exception.
+   1. The stack trace is not printed since a `RetryListener` is being used. I am logging a warn message.
 
 ### Metrics
 1. Add `org.hibernate:hibernate-micrometer` dependency.
@@ -54,9 +57,7 @@ This exception is thrown when the optimistic lock detects a conflict.
 4. Go to: `http://localhost:8080/actuator/metrics/hibernate.optimistic.failures`.
 
 ### `RetryListener`
-A `RetryListener` can be used to log retry attempts via bean.
-
-This could potentially be used to measure retries via Micrometer?
+A `RetryListener` can be used to log retry attempts via a bean.
 
 ### TODO
 1. What is the best way to retry on conflict?
